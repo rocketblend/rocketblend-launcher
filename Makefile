@@ -24,5 +24,16 @@ dep:
 	@go mod vendor
 	@go mod tidy
 
+run:
+	@go run ./cmd/launcher
+
 build:
 	@go build -ldflags -H=windowsgui ./cmd/launcher
+
+dry:
+	@goreleaser release --snapshot --rm-dist
+
+release:
+	@git tag $(version)
+	@git push origin $(version)
+	@goreleaser --rm-dist
