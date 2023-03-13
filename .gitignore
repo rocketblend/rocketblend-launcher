@@ -34,3 +34,6 @@ dist/
 
 # Cosign
 *.key
+
+# Logs
+*.log

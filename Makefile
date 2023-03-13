@@ -21,14 +21,13 @@ benchmark: ## Run benchmarks
 
 dep:
 	@go mod download
-	@go mod vendor
 	@go mod tidy
 
 run:
 	@go run ./cmd/launcher
 
 build:
-	@go build -ldflags -H=windowsgui ./cmd/launcher
+	@go build ./cmd/launcher
 
 dry:
 	@goreleaser release --snapshot --rm-dist
