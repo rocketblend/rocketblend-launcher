@@ -21,7 +21,6 @@ benchmark: ## Run benchmarks
 
 dep:
 	@go mod download
-	@go mod vendor
 	@go mod tidy
 
 run:
