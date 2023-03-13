@@ -3,6 +3,7 @@ package launcher
 import (
 	"fmt"
 	"io/fs"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,13 +16,13 @@ import (
 var Name = "rocketblend-launcher"
 
 func Launch() error {
-	fmt.Println("Checking if rocketblend is available...")
+	log.Println("Checking if rocketblend is available...")
 
 	if !isRocketBlendAvailable() {
 		return fmt.Errorf("rocketblend is not available")
 	}
 
-	fmt.Println("Rocketblend is available!")
+	log.Println("Rocketblend is available!")
 
 	config, err := config.Load(Name)
 	if err != nil {
@@ -38,27 +39,25 @@ func Launch() error {
 		return fmt.Errorf("invalid rocket path: %s", path)
 	}
 
-	fmt.Println("Starting project...")
-
+	log.Println("Starting project...")
 	cmd := exec.Command("rocketblend", "start", "-d", path)
-	err = cmd.Run()
+
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("error starting project: %s", err)
+		log.Printf("failed to start rocketblend: %v, output: %s", err, output)
+		return fmt.Errorf("failed to start rocketblend: %v", err)
 	}
 
-	fmt.Println("Project started successfully!")
-
+	log.Println("Project started successfully!")
 	config.Set("previous", launch)
-
-	fmt.Println("Updating last launched...")
+	log.Println("Updating last launched...")
 
 	err = config.WriteConfig()
 	if err != nil {
 		return fmt.Errorf("error writing config: %s", err)
 	}
 
-	fmt.Println("Updated successfully!")
-
+	log.Println("Updated successfully!")
 	return nil
 }
 

@@ -28,7 +28,7 @@ run:
 	@go run ./cmd/launcher
 
 build:
-	@go build -ldflags -H=windowsgui ./cmd/launcher
+	@go build ./cmd/launcher
 
 dry:
 	@goreleaser release --snapshot --rm-dist
