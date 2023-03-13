@@ -2,14 +2,16 @@ package main
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/rocketblend/rocketblend-launcher/pkg/cmd/launcher"
 )
 
 func main() {
+	fmt.Println("Starting launcher...")
+
 	if err := launcher.Launch(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		fmt.Println("Something went wrong, ", err)
 	}
+
+	fmt.Println("Launcher finished!")
 }
