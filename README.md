@@ -1,4 +1,6 @@
-### [Discussions](https://github.com/rocketblend/rocketblend-launcher/discussions) │ [Latest Release](https://github.com/rocketblend/rocketblend-launcher/releases/latest)
+### [Discussions](https://github.com/rocketblend/rocketblend-launcher/discussions) │ [Documentation](https://docs.rocketblend.io/v/launcher) │ [Latest Release](https://github.com/rocketblend/rocketblend-launcher/releases/latest)
+
+## Currently under development. Not suitable for use.
 
 # RocketBlend Launcher
 
