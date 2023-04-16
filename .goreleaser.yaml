@@ -1,3 +1,5 @@
+project_name: rocketblend-launcher
+
 before:
   hooks:
     - make check

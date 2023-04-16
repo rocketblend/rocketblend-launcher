@@ -64,9 +64,9 @@ func Launch() error {
 func isRocketBlendAvailable() bool {
 	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {
-		cmd = exec.Command("where", "rocketblend.exe")
+		cmd = exec.Command("where", "rktb.exe")
 	} else {
-		cmd = exec.Command("which", "rocketblend")
+		cmd = exec.Command("which", "rktb")
 	}
 	err := cmd.Run()
 	return err == nil
