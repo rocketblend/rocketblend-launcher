@@ -13,7 +13,10 @@ import (
 	"github.com/rocketblend/rocketblend-launcher/pkg/cmd/launcher/config"
 )
 
-var Name = "rocketblend-launcher"
+const (
+	Name  = "rocketblend-launcher"
+	Alias = "rktb"
+)
 
 func Launch() error {
 	log.Println("Checking if rocketblend is available...")
@@ -40,12 +43,12 @@ func Launch() error {
 	}
 
 	log.Println("Starting project...")
-	cmd := exec.Command("rocketblend", "start", "-d", path)
+	cmd := exec.Command(Alias, "start", "-d", path)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Printf("failed to start rocketblend: %v, output: %s", err, output)
-		return fmt.Errorf("failed to start rocketblend: %v", err)
+		log.Printf("failed to start project: %v, output: %s", err, output)
+		return fmt.Errorf("failed to start project: %v", err)
 	}
 
 	log.Println("Project started successfully!")
@@ -64,9 +67,9 @@ func Launch() error {
 func isRocketBlendAvailable() bool {
 	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {
-		cmd = exec.Command("where", "rocketblend.exe")
+		cmd = exec.Command("where", Alias+".exe")
 	} else {
-		cmd = exec.Command("which", "rocketblend")
+		cmd = exec.Command("which", Alias)
 	}
 	err := cmd.Run()
 	return err == nil

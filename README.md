@@ -7,8 +7,6 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/rocketblend/rocketblend-launcher)](https://goreportcard.com/report/github.com/rocketblend/rocketblend-launcher)
 [![GitHub](https://img.shields.io/github/license/rocketblend/rocketblend-launcher)](https://github.com/rocketblend/rocketblend-launcher/blob/master/LICENSE)
 
-### Currently under development. Not suitable for use.
-
 RocketBlend Launcher is an alternative launcher for `.blend` files that utilizes the [RocketBlend CLI tool](https://github.com/rocketblend/rocketblend). It is designed to be a simple, lightweight, and cross-platform alternative to the official [Blender](https://www.blender.org/) launcher.
 
 ## See Also
