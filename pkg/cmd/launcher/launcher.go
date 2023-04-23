@@ -15,7 +15,7 @@ import (
 
 const (
 	Name  = "rocketblend-launcher"
-	Alias = "rktb"
+	Alias = "rocketblend"
 )
 
 func Launch() error {
