@@ -1,85 +1,156 @@
 package launcher
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
+	"time"
 
+	"github.com/briandowns/spinner"
+	"github.com/hashicorp/go-version"
 	"github.com/rocketblend/rocketblend-launcher/pkg/cmd/launcher/config"
 )
 
+type launcher struct {
+	projectPath        string
+	rocketBlendVersion string
+}
+
 const (
-	Name  = "rocketblend-launcher"
-	Alias = "rocketblend"
+	Name               = "rocketblend-launcher"
+	Alias              = "rocketblend"
+	RocketBlendVersion = "0.8.0"
 )
 
-func Launch() error {
-	log.Println("Checking if rocketblend is available...")
+func New(projectPath string) *launcher {
+	return &launcher{
+		projectPath:        projectPath,
+		rocketBlendVersion: RocketBlendVersion,
+	}
+}
 
-	if !isRocketBlendAvailable() {
-		return fmt.Errorf("rocketblend is not available")
+func (l *launcher) Launch() error {
+	if err := l.WithSpinner("Checking if Rocketblend is available... ", l.checkAvailablity); err != nil {
+		fmt.Println("Rocketblend is not found. Please ensure it is installed and available in PATH.")
+		fmt.Println("You can download Rocketblend from: https://github.com/rocketblend/rocketblend/releases/latest")
+		return err
 	}
 
-	log.Println("Rocketblend is available!")
-
-	config, err := config.Load(Name)
-	if err != nil {
-		return fmt.Errorf("error loading config: %s", err)
+	if err := l.WithSpinner("Checking if Project is valid...", l.checkProject); err != nil {
+		fmt.Println("Invalid project path. Please ensure the project path is valid.")
+		return err
 	}
 
-	launch := config.GetString("previous")
-	if len(os.Args) > 1 {
-		launch = os.Args[1]
+	if err := l.WithSpinner("Starting Rocketblend...", l.startProject); err != nil {
+		fmt.Println("Failed to start Rocketblend.")
+		return err
 	}
 
-	path := filepath.Dir(launch)
-	if !isValidRocketPath(path) {
-		return fmt.Errorf("invalid rocket path: %s", path)
+	if err := l.WithSpinner("Updating config...", l.updateConfig); err != nil {
+		fmt.Println("Failed to update config.")
+		return err
 	}
 
-	log.Println("Starting project...")
-	cmd := exec.Command(Alias, "start", "-d", path)
+	fmt.Println("Rocketblend started successfully!")
 
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Printf("failed to start project: %v, output: %s", err, output)
-		return fmt.Errorf("failed to start project: %v", err)
-	}
-
-	log.Println("Project started successfully!")
-	config.Set("previous", launch)
-	log.Println("Updating last launched...")
-
-	err = config.WriteConfig()
-	if err != nil {
-		return fmt.Errorf("error writing config: %s", err)
-	}
-
-	log.Println("Updated successfully!")
 	return nil
 }
 
-func isRocketBlendAvailable() bool {
-	var cmd *exec.Cmd
-	if runtime.GOOS == "windows" {
-		cmd = exec.Command("where", Alias+".exe")
-	} else {
-		cmd = exec.Command("which", Alias)
+func (l *launcher) updateConfig() error {
+	config, err := config.Load(Name)
+	if err != nil {
+		return err
 	}
-	err := cmd.Run()
-	return err == nil
+
+	config.Set("previous", l.projectPath)
+	if err := config.WriteConfig(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func isValidRocketPath(path string) bool {
+func (l *launcher) checkProject() error {
+	config, err := config.Load(Name)
+	if err != nil {
+		return err
+	}
+
+	projectPath := l.projectPath
+	if projectPath == "" {
+		projectPath = config.GetString("previous")
+	}
+
+	if err := l.isValidProjectPath(filepath.Dir(projectPath)); err != nil {
+		return err
+	}
+
+	l.projectPath = projectPath
+
+	return nil
+}
+
+func (l *launcher) startProject() error {
+	cmd := exec.Command(Alias, "run", "-d", filepath.Dir(l.projectPath))
+	err := cmd.Start()
+	if err != nil {
+		return err
+	}
+
+	errChan := make(chan error, 1)
+
+	go func() {
+		errChan <- cmd.Wait()
+	}()
+
+	go func() {
+		err := <-errChan
+		if err != nil {
+			fmt.Printf("ERROR: %v", err)
+		}
+	}()
+
+	return nil
+}
+
+func (l *launcher) checkAvailablity() error {
+	cmd := exec.Command(Alias, "--version")
+	out, err := cmd.Output()
+	if err != nil {
+		return errors.New("rocketblend not found")
+	}
+
+	versionStr := strings.TrimSpace(string(out))
+	if versionStr == "dev" {
+		return nil // Bypass version check for "dev" version
+	}
+
+	v, err := version.NewVersion(versionStr)
+	if err != nil {
+		return fmt.Errorf("failed to parse Rocketblend version: %w", err)
+	}
+
+	constraints, err := version.NewConstraint(">= " + l.rocketBlendVersion)
+	if err != nil {
+		return fmt.Errorf("failed to parse version constraint: %w", err)
+	}
+
+	if !constraints.Check(v) {
+		return fmt.Errorf("rocketblend version is too old, minimum version required is %s", l.rocketBlendVersion)
+	}
+
+	return nil
+}
+
+func (l *launcher) isValidProjectPath(path string) error {
 	// Check if path exists and is a directory
 	fileInfo, err := os.Stat(path)
 	if err != nil || !fileInfo.IsDir() {
-		return false
+		return fmt.Errorf("the provided path either does not exist or is not a directory: %v", err)
 	}
 
 	// Check if path contains a .blend file and a rocketfile.yaml file
@@ -100,8 +171,30 @@ func isValidRocketPath(path string) bool {
 	})
 
 	if err != nil {
-		return false
+		return fmt.Errorf("an error occurred while walking the directory: %v", err)
 	}
 
-	return blendFileFound && rocketFileFound
+	if !blendFileFound {
+		return errors.New("no .blend file found in the provided path")
+	}
+
+	if !rocketFileFound {
+		return errors.New("no rocketfile.yaml file found in the provided path")
+	}
+
+	return nil
+}
+
+func (l *launcher) WithSpinner(prefix string, f func() error) error {
+	spinner := spinner.New(spinner.CharSets[11], 100*time.Millisecond)
+	spinner.HideCursor = true
+	spinner.Prefix = prefix
+	spinner.Start()
+	err := f()
+	spinner.Stop()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
