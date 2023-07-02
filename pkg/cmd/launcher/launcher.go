@@ -35,8 +35,8 @@ func New(projectPath string) *launcher {
 
 func (l *launcher) Launch() error {
 	if err := l.WithSpinner("Checking if Rocketblend is available... ", l.checkAvailablity); err != nil {
-		fmt.Println("Rocketblend is not found. Please ensure it is installed and available in PATH.")
-		fmt.Println("You can download Rocketblend from: https://github.com/rocketblend/rocketblend/releases/latest")
+		fmt.Println("Rocketblend is not found. Please ensure you have the correct version and it is installed and available in PATH.")
+		fmt.Println("To download Rocketblend, visit: https://docs.rocketblend.io/getting-started/installation")
 		return err
 	}
 
@@ -45,7 +45,8 @@ func (l *launcher) Launch() error {
 		return err
 	}
 
-	if err := l.WithSpinner("Starting Rocketblend...", l.startProject); err != nil {
+	// Don't use spinner for starting project as rocketblend will handle it
+	if err := l.startProject(); err != nil {
 		fmt.Println("Failed to start Rocketblend.")
 		return err
 	}
@@ -54,8 +55,6 @@ func (l *launcher) Launch() error {
 		fmt.Println("Failed to update config.")
 		return err
 	}
-
-	fmt.Println("Rocketblend started successfully!")
 
 	return nil
 }
@@ -96,23 +95,18 @@ func (l *launcher) checkProject() error {
 
 func (l *launcher) startProject() error {
 	cmd := exec.Command(Alias, "run", "-d", filepath.Dir(l.projectPath))
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
 	err := cmd.Start()
 	if err != nil {
 		return err
 	}
 
-	errChan := make(chan error, 1)
-
-	go func() {
-		errChan <- cmd.Wait()
-	}()
-
-	go func() {
-		err := <-errChan
-		if err != nil {
-			fmt.Printf("ERROR: %v", err)
-		}
-	}()
+	err = cmd.Wait()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
