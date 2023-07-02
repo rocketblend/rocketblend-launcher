@@ -3,28 +3,29 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/rocketblend/rocketblend-launcher/pkg/cmd/launcher"
 )
 
 func main() {
-	log.Println("Starting launcher...")
-
 	defer func() {
 		if r := recover(); r != nil {
-			log.Fatalf("PANIC: %v", r)
+			fmt.Printf("PANIC: %v", r)
 			exit()
 		}
 	}()
 
-	if err := launcher.Launch(); err != nil {
-		log.Printf("Something went wrong: %v", err)
-		exit()
+	var projectPath string
+	if len(os.Args) > 1 {
+		projectPath = os.Args[1]
 	}
 
-	log.Println("Launcher finished!")
+	launcher := launcher.New(projectPath)
+	if err := launcher.Launch(); err != nil {
+		//fmt.Printf("Something went wrong: %v\n", err)
+		exit()
+	}
 }
 
 func exit() {
